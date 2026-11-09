@@ -91,7 +91,7 @@ function birthdayRow(e) {
   </div>`;
 }
 
-function christmasCard(x, { full = false } = {}) {
+function christmasCard(x, { full = false, collapsible = false } = {}) {
   const s = x.summary, tot = s.total || 1;
   const p = (n) => `${(n / tot) * 100}%`;
   const rows = x.list.map((e) => {
@@ -103,13 +103,14 @@ function christmasCard(x, { full = false } = {}) {
         ${giftBlock(e, 'christmas', x.year)}
       </div></div>`;
   }).join('');
-  return `<section class="card xmas">
-    <div class="card-head"><div><h2>🎄 Noël ${x.year}${x.days_left != null ? ` — ${x.days_left >= 0 ? `J-${x.days_left}` : 'passé'}` : ''}</h2>
+  const collapsed = collapsible && localStorage.getItem('xmasCollapsed') === '1';
+  return `<section class="card xmas ${collapsed ? 'collapsed' : ''}">
+    <div class="card-head ${collapsible ? 'toggle' : ''}" ${collapsible ? 'data-act="toggle-xmas"' : ''}><div><h2>${collapsible ? '<span class="chev">▾</span> ' : ''}🎄 Noël ${x.year}${x.days_left != null ? ` — ${x.days_left >= 0 ? `J-${x.days_left}` : 'passé'}` : ''}</h2>
       <div class="muted small">${s.done}/${s.total} offerts · budget engagé ${eur(s.budget) || '0 €'}</div></div>
-      ${full ? '' : '<a class="btn small" href="#/gifts">Tout voir →</a>'}</div>
+      ${full ? '' : '<a class="btn small" href="#/gifts" data-stop>Tout voir →</a>'}</div>
     <div class="progress"><i class="p-given" style="width:${p(s.done)}"></i><i class="p-bought" style="width:${p(s.bought)}"></i><i class="p-idea" style="width:${p(s.idea)}"></i></div>
     <div class="legend"><span>🎁 ${s.done} offerts</span><span>🛍️ ${s.bought} achetés</span><span>💡 ${s.idea} idées</span><span>❔ ${s.none} sans idée</span></div>
-    <div class="list" style="margin-top:12px">${rows || '<div class="empty">Coche « J\'offre un cadeau de Noël » sur les fiches concernées.</div>'}</div>
+    <div class="list xmas-list" style="margin-top:12px">${rows || '<div class="empty">Coche « J\'offre un cadeau de Noël » sur les fiches concernées.</div>'}</div>
   </section>`;
 }
 
@@ -128,7 +129,7 @@ pages.dashboard = async (main) => {
       <div class="stat"><b>${d.stats.seen30}</b><span>vus ce mois-ci</span></div>
       <div class="stat"><b>${d.stats.contacts}</b><span>contacts</span></div>
     </div>
-    ${d.christmas ? christmasCard(d.christmas) : ''}
+    ${d.christmas ? christmasCard(d.christmas, { collapsible: true }) : ''}
     <div class="grid2">
       <section class="card"><div class="card-head"><h2>🎂 Anniversaires — 30 prochains jours</h2></div>
         <div class="list">${d.birthdays.map(birthdayRow).join('') || '<div class="empty">Aucun anniversaire dans les 30 jours.</div>'}</div></section>
@@ -420,6 +421,11 @@ const bulk = async (action, value) => {
 };
 
 const actions = {
+  'toggle-xmas': (el, e) => {
+    if (e.target.closest('[data-stop]')) return;
+    const card = el.closest('.xmas'); const c = card.classList.toggle('collapsed');
+    try { localStorage.setItem('xmasCollapsed', c ? '1' : '0'); } catch {}
+  },
   'toggle-select': () => { state.selectMode = !state.selectMode; state.sel.clear(); state.drawContacts(); },
   'toggle-sel': (el) => { const id = +el.dataset.id; state.sel.has(id) ? state.sel.delete(id) : state.sel.add(id); state.drawContacts(); },
   'sel-all': () => { state.visibleContacts().forEach((c) => state.sel.add(c.id)); state.drawContacts(); },
@@ -502,6 +508,7 @@ const changes = {
 };
 
 document.addEventListener('click', async (e) => {
+  if (e.target.closest('[data-stop]')) return;
   const el = e.target.closest('[data-act]'); if (!el || !actions[el.dataset.act]) return;
   e.preventDefault();
   try { await actions[el.dataset.act](el, e); } catch (err) { toast(err.message, true); }

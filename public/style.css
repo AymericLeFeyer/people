@@ -242,3 +242,9 @@ code { background: var(--accent-soft); padding: 1px 6px; border-radius: 6px; fon
 }
 @keyframes sheet { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (max-width: 380px) { .cols { grid-template-columns: 1fr; } }
+
+.card-head.toggle { cursor: pointer; user-select: none; }
+.card-head.toggle .chev { display: inline-block; transition: transform .15s; font-size: 14px; }
+.xmas.collapsed .chev { transform: rotate(-90deg); }
+.xmas.collapsed .xmas-list, .xmas.collapsed .legend { display: none; }
+.xmas.collapsed .card-head { margin-bottom: 0; }
