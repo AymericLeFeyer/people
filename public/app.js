@@ -30,7 +30,7 @@ const fullName = (c) => c.name || [c.first_name, c.last_name].filter(Boolean).jo
 
 const shownName = (c) => c.nickname || fullName(c);
 function avatar(c, cls = '') {
-  if (c.photo) return `<img class="avatar ${cls}" src="${esc(c.photo)}" alt="">`;
+  if (c.photo) return `<img class="avatar ${cls}" src="${esc(c.photo)}" alt="" data-init="${esc(initials(c))}" data-hue="${(c.id * 67) % 360}">`;
   return `<div class="avatar ${cls}" style="background:hsl(${(c.id * 67) % 360} 45% 48%)">${esc(initials(c))}</div>`;
 }
 function catBadge(c) { return c.category ? `<span class="badge">${esc(catLabel(c.category))}</span>` : ''; }
@@ -45,6 +45,16 @@ function ratioBar(c) {
   return `<div class="bar ${c.overdue ? 'bad' : c.ratio > 0.75 ? 'warn' : ''}"><i style="width:${c.days_since === null ? 100 : pct}%"></i></div>`;
 }
 async function loadContacts(force) { if (force || !state.contacts) state.contacts = await api('/api/contacts'); return state.contacts; }
+
+// photo introuvable (404) : on retombe sur les initiales au lieu d'une image cassée
+document.addEventListener('error', (e) => {
+  const img = e.target;
+  if (img.tagName !== 'IMG' || !img.classList.contains('avatar')) return;
+  const d = document.createElement('div');
+  d.className = img.className; d.textContent = img.dataset.init || '?';
+  d.style.background = `hsl(${img.dataset.hue || 0} 45% 48%)`;
+  img.replaceWith(d);
+}, true);
 
 // ====================== modale ======================
 const dlg = $('#modal');

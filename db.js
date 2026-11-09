@@ -110,6 +110,8 @@ export function setSetting(key, value) {
   run('INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value', key, JSON.stringify(value));
 }
 
+export const photoExists = (p) => !!p && fs.existsSync(path.join(PHOTO_DIR, path.basename(p)));
+
 export function savePhoto(contactId, buffer, ext = 'jpg') {
   const old = get('SELECT photo FROM contacts WHERE id=?', contactId)?.photo;
   const file = `${contactId}-${Date.now()}.${ext}`;

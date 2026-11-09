@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { db, all, get, run, insert, update, tx, getSetting, setSetting, savePhoto, PHOTO_DIR, DATA_DIR } from './db.js';
+import { db, all, get, run, insert, update, tx, getSetting, setSetting, savePhoto, photoExists, PHOTO_DIR, DATA_DIR } from './db.js';
 import {
   CATEGORIES, thresholds, contactRows, decorate, birthdayGifts, christmasGifts, christmasSummary,
   ymd, today, diffDays, parseYmd,
@@ -248,20 +248,32 @@ route('PUT', '/api/settings/thresholds', ({ body }) => {
   return { ok: true };
 });
 
-route('GET', '/api/export', () => ({
-  version: 1, exported_at: new Date().toISOString(),
-  contacts: all('SELECT * FROM contacts'), visits: all('SELECT * FROM visits'), gifts: all('SELECT * FROM gifts'),
-  thresholds: getSetting('thresholds', {}),
-}));
+route('GET', '/api/export', () => {
+  const contacts = all('SELECT * FROM contacts');
+  // les photos voyagent avec l'export (base64), sinon elles seraient perdues en changeant de machine
+  const photos = {};
+  for (const c of contacts) {
+    if (c.photo && photoExists(c.photo)) photos[path.basename(c.photo)] = fs.readFileSync(path.join(PHOTO_DIR, path.basename(c.photo))).toString('base64');
+  }
+  return { version: 2, exported_at: new Date().toISOString(), contacts, visits: all('SELECT * FROM visits'), gifts: all('SELECT * FROM gifts'), photos, thresholds: getSetting('thresholds', {}) };
+});
 
 route('POST', '/api/import', ({ body }) => {
   if (!Array.isArray(body.contacts)) throw bad('Fichier invalide');
+  const photos = body.photos || {};
   tx(() => {
     run('DELETE FROM gifts'); run('DELETE FROM visits'); run('DELETE FROM contacts');
     for (const [table, rows] of [['contacts', body.contacts], ['visits', body.visits || []], ['gifts', body.gifts || []]]) {
       for (const r of rows) {
         const o = { ...r };
-        if (table === 'contacts') { o.google_birthday_event = null; o.google_birthday_sig = null; }
+        if (table === 'contacts') {
+          o.google_birthday_event = null; o.google_birthday_sig = null;
+          if (o.photo) {
+            const name = path.basename(o.photo);
+            if (photos[name]) fs.writeFileSync(path.join(PHOTO_DIR, name), Buffer.from(photos[name], 'base64'));
+            else if (!photoExists(o.photo)) o.photo = null; // fichier absent : la synchro Google le retélécharge
+          }
+        }
         if (table === 'visits') { o.google_event_id = null; o.dirty = 0; }
         insert(table, o);
       }

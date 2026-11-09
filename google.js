@@ -1,6 +1,6 @@
 // Synchro Google (Agenda + Contacts) sans dépendance : OAuth2 + fetch.
 import crypto from 'node:crypto';
-import { all, get, run, insert, update, getSetting, setSetting, savePhoto } from './db.js';
+import { all, get, run, insert, update, getSetting, setSetting, savePhoto, photoExists } from './db.js';
 import { ymd, parseYmd, addDays, today, pad } from './logic.js';
 
 const SCOPES = [
@@ -121,7 +121,8 @@ const nameOf = (c) => [c.first_name, c.last_name].filter(Boolean).join(' ');
 
 // ---------- 1. Google Contacts -> fiches ----------
 async function importContacts(res) {
-  let pageToken, created = 0, updated = 0;
+  let pageToken, created = 0, updated = 0, photos = 0;
+  const photoErrors = [];
   const local = () => all('SELECT * FROM contacts');
   do {
     const url = 'https://people.googleapis.com/v1/people/me/connections?' + new URLSearchParams({
@@ -158,16 +159,19 @@ async function importContacts(res) {
         if (!c.birth_month && b) Object.assign(patch, { birth_month: b.month, birth_day: b.day, birth_year: b.year ?? null });
         if (Object.keys(patch).length) { update('contacts', c.id, patch); updated++; }
       }
-      if (photo && !c.photo) {
+      // une photo « enregistrée » dont le fichier a disparu (ex. base importée sans les images) est retéléchargée
+      if (photo && (!c.photo || !photoExists(c.photo))) {
         try {
           const r = await fetch(photo.url.replace(/=s\d+$/, '=s400'));
-          if (r.ok) savePhoto(c.id, Buffer.from(await r.arrayBuffer()), 'jpg');
-        } catch {}
+          if (r.ok) { savePhoto(c.id, Buffer.from(await r.arrayBuffer()), 'jpg'); photos++; }
+          else photoErrors.push(`${first} : HTTP ${r.status}`);
+        } catch (e) { photoErrors.push(`${first} : ${e.message}`); }
       }
     }
     pageToken = data?.nextPageToken;
   } while (pageToken);
-  res.contacts = { created, updated };
+  res.contacts = { created, updated, photos };
+  if (photoErrors.length) res.errors.push(`Photos : ${photoErrors.length} échec(s), ex. ${photoErrors[0]}`);
 }
 
 // ---------- agenda -> visites ----------
