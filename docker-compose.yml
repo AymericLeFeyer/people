@@ -1,0 +1,27 @@
+# Stack Portainer : un seul service, un volume pour la base SQLite et les photos.
+#
+# Déploiement : créer une stack depuis ce dépôt GitHub, renseigner les variables
+# d'environnement, puis déployer. L'image est construite par la CI et publiée sur GHCR ;
+# en local, voir docker-compose.dev.yml.
+
+services:
+  people:
+    image: ghcr.io/aymericlefeyer/people:${TAG:-latest}
+    container_name: people
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-Europe/Paris}
+      # Mot de passe de l'appli (HTTP Basic, identifiant libre). À renseigner dès que l'appli
+      # est joignable depuis Internet : elle contient des données personnelles.
+      APP_PASSWORD: ${APP_PASSWORD:-}
+      # Adresse publique en https://… : sert à l'URI de redirection OAuth Google
+      # (<PUBLIC_URL>/auth/google/callback). Google exige https hors localhost.
+      PUBLIC_URL: ${PUBLIC_URL:-}
+    volumes:
+      - people-data:/app/data
+    ports:
+      - '${WEB_PORT:-3000}:3000'
+
+volumes:
+  people-data:
+    name: people-data

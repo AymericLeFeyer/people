@@ -1,0 +1,10 @@
+node_modules
+data
+data-demo
+.git
+.github
+.DS_Store
+*.md
+test-google-mock.mjs
+docker-compose*.yml
+Dockerfile

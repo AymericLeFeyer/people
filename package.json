@@ -1,0 +1,13 @@
+{
+  "name": "people",
+  "version": "1.0.0",
+  "description": "Suivi des contacts : visites, anniversaires, cadeaux, synchro Google Agenda",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "demo": "DATA_DIR=./data-demo node seed.js && DATA_DIR=./data-demo PORT=3100 node server.js"
+  },
+  "engines": { "node": ">=22.5" }
+}

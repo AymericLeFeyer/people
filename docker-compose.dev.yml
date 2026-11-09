@@ -1,0 +1,8 @@
+# Variante qui construit l'image localement au lieu de la tirer depuis GHCR.
+# Usage : docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+
+services:
+  people:
+    image: people:local
+    build:
+      context: .

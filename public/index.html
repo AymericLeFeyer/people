@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>People</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🫂</text></svg>">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <nav id="nav">
+    <a class="brand" href="#/">🫂 <span>People</span></a>
+    <a href="#/" data-nav="dashboard"><i>🏠</i><span>Tableau de bord</span></a>
+    <a href="#/contacts" data-nav="contacts"><i>👥</i><span>Contacts</span></a>
+    <a href="#/gifts" data-nav="gifts"><i>🎁</i><span>Cadeaux</span></a>
+    <a href="#/admin" data-nav="admin"><i>⚙️</i><span>Admin</span></a>
+  </nav>
+  <main id="main"></main>
+  <dialog id="modal"><div class="modal-head"><h3 id="modal-title"></h3><button class="icon" data-act="close-modal" aria-label="Fermer">✕</button></div><div id="modal-body"></div></dialog>
+  <div id="toast" hidden></div>
+  <script src="/app.js"></script>
+</body>
+</html>
