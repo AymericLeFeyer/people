@@ -549,3 +549,6 @@ async function render() {
 }
 window.addEventListener('hashchange', () => { closeModal(); render(); scrollTo(0, 0); });
 render();
+
+// PWA : service worker (disponible en https ou sur localhost)
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
