@@ -177,8 +177,12 @@ code { background: var(--accent-soft); padding: 1px 6px; border-radius: 6px; fon
   #nav a.active { background: var(--accent-soft); }
 
   main { padding: 16px 14px calc(var(--nav-h) + var(--safe-b) + 22px); }
-  h1 { font-size: 23px; }
-  .page-head { margin-bottom: 16px; gap: 10px; }
+  /* en-tête collant : reste visible pendant le défilement (les chiffres clés, eux, défilent) */
+  .page-head { position: sticky; top: 0; z-index: 12; margin: -16px -14px 14px; padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 10px; gap: 8px;
+    background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
+  .page-head h1 { font-size: 20px; }
+  .page-head p { font-size: 12.5px; margin: 1px 0 0; }
+  .page-head button, .page-head .btn { min-height: 36px; padding: 6px 12px; }
   .page-head > .row { width: 100%; }
   .page-head > .row { flex-wrap: wrap; }
   .page-head > .row > button, .page-head > .row > .btn { flex: 1 1 auto; justify-content: center; white-space: nowrap; }
