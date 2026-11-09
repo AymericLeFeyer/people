@@ -12,8 +12,6 @@ import * as google from './google.js';
 
 const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '127.0.0.1'; // 0.0.0.0 dans Docker
-const APP_PASSWORD = process.env.APP_PASSWORD || ''; // facultatif : protège toute l'appli (HTTP Basic, n'importe quel identifiant)
-const safeEq = (a, b) => { const x = crypto.createHash('sha256').update(a).digest(), y = crypto.createHash('sha256').update(b).digest(); return crypto.timingSafeEqual(x, y); };
 const PUBLIC = path.join(path.dirname(fileURLToPath(import.meta.url)), 'public');
 
 // ---------- mini routeur ----------
@@ -301,13 +299,6 @@ const server = http.createServer(async (req, res) => {
     res.end(isStr ? data : JSON.stringify(data));
   };
   try {
-    if (APP_PASSWORD) {
-      const pwd = Buffer.from((req.headers.authorization || '').replace(/^Basic /i, ''), 'base64').toString().split(':').slice(1).join(':');
-      if (!safeEq(pwd, APP_PASSWORD)) {
-        res.writeHead(401, { 'www-authenticate': 'Basic realm="People", charset="UTF-8"' });
-        return res.end('Authentification requise');
-      }
-    }
     // OAuth Google
     if (url.pathname === '/auth/google/start') {
       res.writeHead(302, { location: google.authUrl(PORT) }); return res.end();
@@ -348,7 +339,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`\n  People → http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}${APP_PASSWORD ? ' (protégé par mot de passe)' : ''}\n  Données : ${DATA_DIR}\n`);
+  console.log(`\n  People → http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}\n  Données : ${DATA_DIR}\n`);
 });
 
 // synchro auto toutes les 20 minutes si Google est connecté
