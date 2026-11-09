@@ -2,7 +2,8 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#5b4bdb">
   <title>People</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🫂</text></svg>">
   <link rel="stylesheet" href="/style.css">
@@ -10,10 +11,10 @@
 <body>
   <nav id="nav">
     <a class="brand" href="#/">🫂 <span>People</span></a>
-    <a href="#/" data-nav="dashboard"><i>🏠</i><span>Tableau de bord</span></a>
-    <a href="#/contacts" data-nav="contacts"><i>👥</i><span>Contacts</span></a>
-    <a href="#/gifts" data-nav="gifts"><i>🎁</i><span>Cadeaux</span></a>
-    <a href="#/admin" data-nav="admin"><i>⚙️</i><span>Admin</span></a>
+    <a href="#/" data-nav="dashboard"><i>🏠</i><span class="long">Tableau de bord</span><span class="short">Accueil</span></a>
+    <a href="#/contacts" data-nav="contacts"><i>👥</i><span class="long">Contacts</span><span class="short">Contacts</span></a>
+    <a href="#/gifts" data-nav="gifts"><i>🎁</i><span class="long">Cadeaux</span><span class="short">Cadeaux</span></a>
+    <a href="#/admin" data-nav="admin"><i>⚙️</i><span class="long">Admin</span><span class="short">Admin</span></a>
   </nav>
   <main id="main"></main>
   <dialog id="modal"><div class="modal-head"><h3 id="modal-title"></h3><button class="icon" data-act="close-modal" aria-label="Fermer">✕</button></div><div id="modal-body"></div></dialog>
