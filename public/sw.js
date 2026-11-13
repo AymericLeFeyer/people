@@ -1,7 +1,7 @@
 // Service worker minimal : rend l'appli installable et garde le shell (HTML/CSS/JS/icônes) pour un démarrage rapide.
 // Les données (/api, /photos) ne sont jamais servies depuis le cache : elles doivent toujours être à jour.
-const CACHE = 'people-shell-v1';
-const SHELL = ['/', '/style.css', '/app.js', '/icon.svg', '/icon-192.png', '/manifest.webmanifest'];
+const CACHE = 'people-shell-v2';
+const SHELL = ['/', '/style.css', '/app.js', '/people.svg', '/icon-192.png', '/manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
