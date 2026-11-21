@@ -122,6 +122,7 @@ function christmasCard(x, { full = false, collapsible = false } = {}) {
         ${giftBlock(e, 'christmas', x.year)}
       </div></div>`;
   }).join('');
+  let view = 'list'; try { view = localStorage.getItem('xmasView') === 'plan' ? 'plan' : 'list'; } catch {}
   const collapsed = collapsible && localStorage.getItem('xmasCollapsed') === '1';
   return `<section class="card xmas ${collapsed ? 'collapsed' : ''}">
     <div class="card-head ${collapsible ? 'toggle' : ''}" ${collapsible ? 'data-act="toggle-xmas"' : ''}><div><h2>${collapsible ? '<span class="chev">▾</span> ' : ''}🎄 Noël ${x.year}${x.days_left != null ? ` — ${x.days_left >= 0 ? `J-${x.days_left}` : 'passé'}` : ''}</h2>
@@ -129,7 +130,8 @@ function christmasCard(x, { full = false, collapsible = false } = {}) {
       ${full ? '' : '<a class="btn small" href="#/gifts" data-stop>Tout voir →</a>'}</div>
     <div class="progress"><i class="p-given" style="width:${p(s.done)}"></i><i class="p-wrapped" style="width:${p(s.wrapped)}"></i><i class="p-received" style="width:${p(s.received)}"></i><i class="p-ordered" style="width:${p(s.ordered)}"></i><i class="p-idea" style="width:${p(s.idea)}"></i></div>
     <div class="legend"><span>🎁 ${s.done} offerts</span><span>🎀 ${s.wrapped} emballés</span><span>📦 ${s.received} reçus</span><span>🛒 ${s.ordered} commandés</span><span>💡 ${s.idea} idées</span><span>❔ ${s.none} sans idée</span></div>
-    <div class="list xmas-list" style="margin-top:12px">${rows || '<div class="empty">Coche « J\'offre un cadeau de Noël » sur les fiches concernées.</div>'}</div>
+    <div class="tabs xmas-switch" style="margin:12px 0 0"><button class="${view === 'list' ? 'active' : ''}" data-act="xmas-view" data-view="list">👤 Par personne</button><button class="${view === 'plan' ? 'active' : ''}" data-act="xmas-view" data-view="plan">📅 Planning</button></div>
+    ${view === 'plan' ? `<div class="xmas-list" style="margin-top:12px">${swimlanes(x.list, x.year)}</div>` : `<div class="list xmas-list" style="margin-top:12px">${rows || '<div class="empty">Coche « J\'offre un cadeau de Noël » sur les fiches concernées.</div>'}</div>`}
   </section>`;
 }
 
@@ -493,6 +495,7 @@ const bulk = async (action, value) => {
 };
 
 const actions = {
+  'xmas-view': (el) => { try { localStorage.setItem('xmasView', el.dataset.view); } catch {} refresh(); },
   'toggle-xmas': (el, e) => {
     if (e.target.closest('[data-stop]')) return;
     const card = el.closest('.xmas'); const c = card.classList.toggle('collapsed');

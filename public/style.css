@@ -254,7 +254,7 @@ code { background: var(--accent-soft); padding: 1px 6px; border-radius: 6px; fon
 .card-head.toggle { cursor: pointer; user-select: none; }
 .card-head.toggle .chev { display: inline-block; transition: transform .15s; font-size: 14px; }
 .xmas.collapsed .chev { transform: rotate(-90deg); }
-.xmas.collapsed .xmas-list, .xmas.collapsed .legend { display: none; }
+.xmas.collapsed .xmas-list, .xmas.collapsed .legend, .xmas.collapsed .xmas-switch { display: none; }
 .xmas.collapsed .card-head { margin-bottom: 0; }
 .gift.s-idea .st { color: var(--st-idea); } .gift.s-ordered .st { color: var(--st-ordered); } .gift.s-received .st { color: var(--st-received); } .gift.s-wrapped .st { color: var(--st-wrapped); } .gift.s-given .st { color: var(--st-given); }
 
