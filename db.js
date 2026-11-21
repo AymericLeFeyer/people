@@ -79,6 +79,8 @@ if (!db.prepare('PRAGMA table_info(visits)').all().some((c) => c.name === 'kind'
   db.exec("ALTER TABLE visits ADD COLUMN kind TEXT NOT NULL DEFAULT 'visit'");
 }
 
+db.exec("UPDATE gifts SET status='ordered' WHERE status='bought'");
+
 /** node:sqlite refuse `undefined` et les booléens : on normalise. */
 export const clean = (v) => (v === undefined ? null : typeof v === 'boolean' ? +v : v);
 

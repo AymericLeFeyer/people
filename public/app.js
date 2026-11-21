@@ -4,8 +4,8 @@ const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 const OCC = { birthday: 'Anniversaire', christmas: 'Noël', other: 'Autre' };
-const STATUS = { idea: ['Idée', '💡'], bought: ['Acheté', '🛍️'], given: ['Offert', '🎁'] };
-const NEXT_STATUS = { idea: 'bought', bought: 'given', given: 'idea' };
+const STATUS = { idea: ['Idée', '💡'], ordered: ['Commandé', '🛒'], received: ['Reçu', '📦'], wrapped: ['Emballé', '🎀'], given: ['Offert', '🎁'] };
+const NEXT_STATUS = { idea: 'ordered', ordered: 'received', received: 'wrapped', wrapped: 'given', given: 'idea' };
 const eur = (n) => (n == null ? '' : new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(n));
 const state = { meta: null, contacts: null, tab: {}, filters: { q: '', cat: '', status: '', sort: 'name' } };
 
@@ -118,8 +118,8 @@ function christmasCard(x, { full = false, collapsible = false } = {}) {
     <div class="card-head ${collapsible ? 'toggle' : ''}" ${collapsible ? 'data-act="toggle-xmas"' : ''}><div><h2>${collapsible ? '<span class="chev">▾</span> ' : ''}🎄 Noël ${x.year}${x.days_left != null ? ` — ${x.days_left >= 0 ? `J-${x.days_left}` : 'passé'}` : ''}</h2>
       <div class="muted small">${s.done}/${s.total} offerts · budget engagé ${eur(s.budget) || '0 €'}</div></div>
       ${full ? '' : '<a class="btn small" href="#/gifts" data-stop>Tout voir →</a>'}</div>
-    <div class="progress"><i class="p-given" style="width:${p(s.done)}"></i><i class="p-bought" style="width:${p(s.bought)}"></i><i class="p-idea" style="width:${p(s.idea)}"></i></div>
-    <div class="legend"><span>🎁 ${s.done} offerts</span><span>🛍️ ${s.bought} achetés</span><span>💡 ${s.idea} idées</span><span>❔ ${s.none} sans idée</span></div>
+    <div class="progress"><i class="p-given" style="width:${p(s.done)}"></i><i class="p-wrapped" style="width:${p(s.wrapped)}"></i><i class="p-received" style="width:${p(s.received)}"></i><i class="p-ordered" style="width:${p(s.ordered)}"></i><i class="p-idea" style="width:${p(s.idea)}"></i></div>
+    <div class="legend"><span>🎁 ${s.done} offerts</span><span>🎀 ${s.wrapped} emballés</span><span>📦 ${s.received} reçus</span><span>🛒 ${s.ordered} commandés</span><span>💡 ${s.idea} idées</span><span>❔ ${s.none} sans idée</span></div>
     <div class="list xmas-list" style="margin-top:12px">${rows || '<div class="empty">Coche « J\'offre un cadeau de Noël » sur les fiches concernées.</div>'}</div>
   </section>`;
 }

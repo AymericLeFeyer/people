@@ -16,7 +16,7 @@ Les données sont dans `data/` (SQLite + photos) : copie ce dossier pour sauvega
 - **Groupes** : Famille proche, Amis proches, Famille, Amis, Connaissances. Le seuil (en jours) de chaque groupe se règle dans **Admin**.
 - **Override** : sur une fiche, « Fréquence perso » remplace le seuil du groupe pour cette personne.
 - **À revoir** (dashboard) : contacts dont la dernière visite dépasse le seuil, triés par retard relatif.
-- **Cadeaux** : par fiche, on indique si on offre un cadeau d'anniversaire et/ou de Noël. Chaque cadeau a un statut (idée → acheté → offert), peut être **groupé** (co-donateurs + ma part), et on garde aussi ce qu'on a **reçu**.
+- **Cadeaux** : par fiche, on indique si on offre un cadeau d'anniversaire et/ou de Noël. Chaque cadeau a un statut (idée → commandé → reçu → emballé → offert), peut être **groupé** (co-donateurs + ma part), et on garde aussi ce qu'on a **reçu**.
 - **Dashboard** : anniversaires des 30 prochains jours avec l'état du cadeau ; en novembre/décembre, une zone **Noël** (`/?noel=1` pour la forcer le reste de l'année).
 
 ## Google (Admin → Google Agenda & Contacts)

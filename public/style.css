@@ -93,7 +93,9 @@ label.check { display: flex; gap: 8px; align-items: center; font-weight: 500; fo
 .gifts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
 .gift { display: inline-flex; gap: 6px; align-items: center; border-radius: 9px; padding: 3px 4px 3px 9px; font-size: 13px; background: var(--accent-soft); border: 1px solid transparent; }
 .gift.s-idea { background: var(--warn-soft); }
-.gift.s-bought { background: var(--accent-soft); }
+.gift.s-ordered { background: var(--accent-soft); }
+.gift.s-received { background: var(--accent-soft); }
+.gift.s-wrapped { background: var(--xmas-soft); }
 .gift.s-given { background: var(--ok-soft); }
 .gift .st { cursor: pointer; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; opacity: .85; }
 .gift button.icon { padding: 0 5px; font-size: 12px; }
@@ -104,7 +106,7 @@ label.check { display: flex; gap: 8px; align-items: center; font-weight: 500; fo
 .xmas h2 { color: var(--xmas); font-size: 19px; }
 .progress { display: flex; height: 10px; border-radius: 9px; overflow: hidden; background: var(--line); margin: 10px 0 6px; }
 .progress i { display: block; height: 100%; }
-.progress .p-given { background: var(--ok); } .progress .p-bought { background: var(--accent); } .progress .p-idea { background: var(--warn); }
+.progress .p-given { background: var(--ok); } .progress .p-wrapped { background: var(--xmas); } .progress .p-received { background: var(--accent); } .progress .p-ordered { background: color-mix(in srgb, var(--accent) 50%, var(--line)); } .progress .p-idea { background: var(--warn); }
 .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
 
 .cgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }

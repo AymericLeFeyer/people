@@ -178,7 +178,7 @@ function giftFields(b, partial = false) {
   set('contact_id', int); set('direction', (v) => (v === 'received' ? 'received' : 'given'));
   set('occasion', (v) => (['birthday', 'christmas'].includes(v) ? v : 'other'));
   set('year', (v) => int(v) || new Date().getFullYear());
-  set('status', (v) => (['idea', 'bought', 'given'].includes(v) ? v : 'given'));
+  set('status', (v) => (v === 'bought' ? 'ordered' : ['idea', 'ordered', 'received', 'wrapped', 'given'].includes(v) ? v : 'given'));
   set('description', (v) => str(v)); set('price', num); set('my_share', num);
   set('is_group', bool); set('co_givers', str); set('note', str);
   if ('description' in out && !out.description) throw bad('Décris le cadeau');

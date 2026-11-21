@@ -94,16 +94,18 @@ export function christmasGifts(year) {
 }
 
 export function christmasSummary(list) {
-  let total = 0, done = 0, bought = 0, idea = 0, none = 0, budget = 0;
+  let total = 0, done = 0, wrapped = 0, received = 0, ordered = 0, idea = 0, none = 0, budget = 0;
   for (const e of list) {
     if (!e.contact.gift_christmas) continue;
     total++;
     const sts = e.current.map((g) => g.status);
     if (sts.includes('given')) done++;
-    else if (sts.includes('bought')) bought++;
+    else if (sts.includes('wrapped')) wrapped++;
+    else if (sts.includes('received')) received++;
+    else if (sts.includes('ordered')) ordered++;
     else if (sts.includes('idea')) idea++;
     else none++;
   }
   for (const e of list) for (const g of e.current) budget += g.my_share ?? g.price ?? 0;
-  return { total, done, bought, idea, none, budget };
+  return { total, done, wrapped, received, ordered, idea, none, budget };
 }

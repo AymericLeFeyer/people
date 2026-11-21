@@ -31,7 +31,7 @@ gift('Camille', { direction: 'given', occasion: 'christmas', year: Y - 1, descri
 gift('Camille', { direction: 'received', occasion: 'christmas', year: Y - 1, description: 'Livre de photos de montagne' });
 gift('Camille', { direction: 'given', occasion: 'christmas', year: Y, description: 'Abonnement torréfacteur', price: 30, status: 'idea' });
 gift('Maman', { direction: 'given', occasion: 'christmas', year: Y - 1, description: 'Set d\'outils de jardin', price: 80, is_group: 1, co_givers: 'Papa, Sophie', my_share: 30, status: 'given' });
-gift('Maman', { direction: 'given', occasion: 'christmas', year: Y, description: 'Tablier + cours de cuisine', price: 90, status: 'bought', is_group: 1, co_givers: 'Sophie', my_share: 45 });
+gift('Maman', { direction: 'given', occasion: 'christmas', year: Y, description: 'Tablier + cours de cuisine', price: 90, status: 'ordered', is_group: 1, co_givers: 'Sophie', my_share: 45 });
 gift('Maman', { direction: 'received', occasion: 'christmas', year: Y - 1, description: 'Pull en laine' });
 gift('Thomas', { direction: 'given', occasion: 'birthday', year: Y - 1, description: 'Pack de 6 bières', price: 20 });
 gift('Papa', { direction: 'given', occasion: 'christmas', year: Y - 1, description: 'Canne à pêche télescopique', price: 60 });
