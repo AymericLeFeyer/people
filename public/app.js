@@ -66,10 +66,10 @@ function closeModal() { if (dlg.open) dlg.close(); }
 dlg.addEventListener('click', (e) => { if (e.target === dlg) closeModal(); });
 
 // ====================== cadeaux : composants ======================
-function giftChip(g, { edit = true, dates } = {}) {
+function giftChip(g, { edit = true, dates, drag = false } = {}) {
   const [label, icon] = STATUS[g.status] || STATUS.given;
   const money = g.is_group && g.my_share != null ? `${eur(g.my_share)} / ${eur(g.price)}` : eur(g.price);
-  return `<span class="gift s-${g.status}">
+  return `<span class="gift s-${g.status}${drag ? ' draggable' : ''}" ${drag ? `draggable="true" data-drag-gift="${g.id}" data-contact="${g.contact_id}" data-year="${g.year}"` : ''}>
     ${g.direction === 'given' ? `<span class="st" data-act="cycle-gift" data-id="${g.id}" data-status="${g.status}" title="Changer le statut">${icon} ${label}</span>` : '🎁'}
     <span>${esc(g.description)}</span>
     ${dates && g.christmas_id && dates[g.christmas_id] ? `<span class="xd" title="${esc(xmasName(dates[g.christmas_id]))}">📅 ${new Date(dates[g.christmas_id].date + 'T00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</span>` : ''}
@@ -314,19 +314,19 @@ function swimlanes(list, year) {
     const free = e.current.filter((g) => !xs.some((x) => x.id === g.christmas_id));
     if (free.length || !xs.length) loose.push({ e, gifts: free });
   }
-  const laneHtml = (title, sub, items, cls = '') => {
+  const laneHtml = (date, title, sub, items, cls = '') => {
     const budget = items.reduce((t, it) => t + it.gifts.reduce((s, g) => s + (g.my_share ?? g.price ?? 0), 0), 0);
     const n = items.reduce((t, it) => t + it.gifts.length, 0);
-    return `<section class="lane ${cls}"><div class="lane-head"><div><b>${title}</b><div class="muted small">${sub}</div></div>
+    return `<section class="lane ${cls}" data-lane-date="${date}"><div class="lane-head"><div><b>${title}</b><div class="muted small">${sub}</div></div>
       <div class="muted small" style="text-align:right">${n} cadeau${n > 1 ? 'x' : ''}${budget ? `<br>${eur(budget)}` : ''}</div></div>
       <div class="lane-body">${items.map((it) => { const c = it.e.contact;
         return `<div class="lane-card"><a href="#/contact/${c.id}" class="lane-who">${avatar(c, 'sm')}<span><b>${esc(fullName(c))}</b>${it.x?.label ? `<div class="muted small">${esc(it.x.label)}</div>` : ''}</span></a>
-          <div class="gifts">${it.gifts.map((g) => giftChip(g)).join('') || '<span class="muted small">Aucun cadeau prévu</span>'}</div>
+          <div class="gifts">${it.gifts.map((g) => giftChip(g, { drag: true })).join('') || '<span class="muted small">Aucun cadeau prévu</span>'}</div>
           <div><button class="small ghost" data-act="new-gift" data-contact="${c.id}" data-occasion="christmas" data-year="${year}" ${it.x ? `data-christmas="${it.x.id}"` : ''}>＋ Cadeau</button></div></div>`; }).join('')}</div></section>`;
   };
   const html = [...lanes.keys()].sort().map((d) => { const n = daysTo(d);
-    return laneHtml(`📅 ${esc(fmtDay(d))}`, n > 0 ? `J-${n}` : n === 0 ? "Aujourd'hui" : 'passé', lanes.get(d)); }).join('')
-    + (loose.length ? laneHtml('❔ Sans date', 'À attribuer à un Noël', loose, 'lane-loose') : '');
+    return laneHtml(d, `📅 ${esc(fmtDay(d))}`, n > 0 ? `J-${n}` : n === 0 ? "Aujourd'hui" : 'passé', lanes.get(d)); }).join('')
+    + (loose.length ? laneHtml('', '❔ Sans date', 'À attribuer à un Noël', loose, 'lane-loose') : '');
   return html || '<div class="empty">Aucun Noël prévu. Ajoute une date depuis l\'onglet Noël.</div>';
 }
 
@@ -612,6 +612,32 @@ document.addEventListener('change', async (e) => {
   if (e.target.closest('#gift-form')) { if (['contact_id', 'year'].includes(e.target.name)) loadXmasOptions(); else syncGiftForm(); }
 });
 document.addEventListener('input', (e) => { if (e.target.dataset?.change === 'picker-filter') changes['picker-filter'](e.target); });
+
+// ====================== glisser-déposer (planning) ======================
+// Déposer un cadeau sur une lane le rattache à ce jour : la date est créée pour la personne si elle n'en avait pas.
+let dragGift = null;
+document.addEventListener('dragstart', (e) => {
+  const el = e.target.closest?.('[data-drag-gift]'); if (!el) return;
+  dragGift = { id: +el.dataset.dragGift, contact: +el.dataset.contact, year: +el.dataset.year };
+  e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(dragGift.id));
+  setTimeout(() => el.classList.add('dragging'), 0);
+});
+document.addEventListener('dragend', () => { dragGift = null; document.querySelectorAll('.dragging, .drop-ok').forEach((x) => x.classList.remove('dragging', 'drop-ok')); });
+document.addEventListener('dragover', (e) => { const lane = e.target.closest?.('[data-lane-date]'); if (!dragGift || !lane) return; e.preventDefault(); document.querySelectorAll('.drop-ok').forEach((x) => x !== lane && x.classList.remove('drop-ok')); lane.classList.add('drop-ok'); });
+document.addEventListener('drop', async (e) => {
+  const lane = e.target.closest?.('[data-lane-date]'); if (!dragGift || !lane) return;
+  e.preventDefault();
+  const g = dragGift, date = lane.dataset.laneDate; dragGift = null;
+  try {
+    let xid = null;
+    if (date) {
+      const xs = await api(`/api/christmases?contact_id=${g.contact}&year=${g.year}`);
+      xid = (xs.find((x) => x.date === date) || await api('/api/christmases', 'POST', { contact_id: g.contact, year: g.year, date })).id;
+    }
+    await api(`/api/gifts/${g.id}`, 'PUT', { christmas_id: xid });
+    toast(date ? 'Cadeau déplacé ✓' : 'Cadeau détaché de sa date ✓'); refresh();
+  } catch (err) { toast(err.message, true); }
+});
 
 // ====================== routeur ======================
 async function render() {
