@@ -2,6 +2,7 @@
   --bg: #f6f5f2; --card: #ffffff; --ink: #1d1d1f; --muted: #6b6b72; --line: #e6e3dd;
   --accent: #5b4bdb; --accent-soft: #ecebfc; --ok: #1f8a4c; --ok-soft: #e3f4ea;
   --warn: #b86e00; --warn-soft: #fff1da; --bad: #c8372d; --bad-soft: #fde8e6; --xmas: #1b6b46; --xmas-soft: #e2f3ea;
+  --st-idea: #b86e00; --st-idea-soft: #fff1da; --st-ordered: #2563c9; --st-ordered-soft: #e1ecfc; --st-received: #7c3aed; --st-received-soft: #efe5fd; --st-wrapped: #d6336c; --st-wrapped-soft: #fde4ee; --st-given: #1f8a4c; --st-given-soft: #e3f4ea;
   --radius: 14px; --shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 14px rgba(0,0,0,.04);
 }
 @media (prefers-color-scheme: dark) {
@@ -9,6 +10,7 @@
     --bg: #131316; --card: #1c1c21; --ink: #f1f1f3; --muted: #9a9aa3; --line: #2b2b32;
     --accent: #8f83ff; --accent-soft: #272446; --ok: #55c284; --ok-soft: #16301f; --warn: #f0b04c; --warn-soft: #36290f;
     --bad: #ff7a70; --bad-soft: #3a1a18; --xmas: #5fcf95; --xmas-soft: #12301f; --shadow: none;
+    --st-idea: #f0b04c; --st-idea-soft: #36290f; --st-ordered: #6ea2f5; --st-ordered-soft: #16253f; --st-received: #b08cff; --st-received-soft: #2a1f47; --st-wrapped: #ff7fa8; --st-wrapped-soft: #3d1a28; --st-given: #55c284; --st-given-soft: #16301f;
   }
 }
 * { box-sizing: border-box; }
@@ -92,11 +94,11 @@ label.check { display: flex; gap: 8px; align-items: center; font-weight: 500; fo
 /* cadeaux */
 .gifts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
 .gift { display: inline-flex; gap: 6px; align-items: center; border-radius: 9px; padding: 3px 4px 3px 9px; font-size: 13px; background: var(--accent-soft); border: 1px solid transparent; }
-.gift.s-idea { background: var(--warn-soft); }
-.gift.s-ordered { background: var(--accent-soft); }
-.gift.s-received { background: var(--accent-soft); }
-.gift.s-wrapped { background: var(--xmas-soft); }
-.gift.s-given { background: var(--ok-soft); }
+.gift.s-idea { background: var(--st-idea-soft); }
+.gift.s-ordered { background: var(--st-ordered-soft); }
+.gift.s-received { background: var(--st-received-soft); }
+.gift.s-wrapped { background: var(--st-wrapped-soft); }
+.gift.s-given { background: var(--st-given-soft); }
 .gift .st { cursor: pointer; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; opacity: .85; }
 .gift button.icon { padding: 0 5px; font-size: 12px; }
 .ctx { font-size: 12.5px; color: var(--muted); margin-top: 5px; }
@@ -106,7 +108,7 @@ label.check { display: flex; gap: 8px; align-items: center; font-weight: 500; fo
 .xmas h2 { color: var(--xmas); font-size: 19px; }
 .progress { display: flex; height: 10px; border-radius: 9px; overflow: hidden; background: var(--line); margin: 10px 0 6px; }
 .progress i { display: block; height: 100%; }
-.progress .p-given { background: var(--ok); } .progress .p-wrapped { background: var(--xmas); } .progress .p-received { background: var(--accent); } .progress .p-ordered { background: color-mix(in srgb, var(--accent) 50%, var(--line)); } .progress .p-idea { background: var(--warn); }
+.progress .p-given { background: var(--st-given); } .progress .p-wrapped { background: var(--st-wrapped); } .progress .p-received { background: var(--st-received); } .progress .p-ordered { background: var(--st-ordered); } .progress .p-idea { background: var(--st-idea); }
 .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
 
 .cgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
@@ -254,3 +256,4 @@ code { background: var(--accent-soft); padding: 1px 6px; border-radius: 6px; fon
 .xmas.collapsed .chev { transform: rotate(-90deg); }
 .xmas.collapsed .xmas-list, .xmas.collapsed .legend { display: none; }
 .xmas.collapsed .card-head { margin-bottom: 0; }
+.gift.s-idea .st { color: var(--st-idea); } .gift.s-ordered .st { color: var(--st-ordered); } .gift.s-received .st { color: var(--st-received); } .gift.s-wrapped .st { color: var(--st-wrapped); } .gift.s-given .st { color: var(--st-given); }
