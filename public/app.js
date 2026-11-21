@@ -304,28 +304,29 @@ function giftTable(list, contactId) {
     <td style="width:40px"><button class="icon" data-act="edit-gift" data-id="${g.id}">✎</button></td></tr>`).join('')}</tbody></table>`;
 }
 
+const laneKey = (x) => `${x.date}|${(x.label || '').replace(/\|/g, '').trim()}`;
 function swimlanes(list, year) {
   const lanes = new Map(); // date -> [{e, xmas, gifts}]
   const loose = [];        // cadeaux / personnes sans date
   const add = (key, item) => { if (!lanes.has(key)) lanes.set(key, []); lanes.get(key).push(item); };
   for (const e of list) {
     const xs = e.christmases || [];
-    for (const x of xs) add(x.date, { e, x, gifts: e.current.filter((g) => g.christmas_id === x.id) });
+    for (const x of xs) add(laneKey(x), { e, x, gifts: e.current.filter((g) => g.christmas_id === x.id) });
     const free = e.current.filter((g) => !xs.some((x) => x.id === g.christmas_id));
     if (free.length || !xs.length) loose.push({ e, gifts: free });
   }
-  const laneHtml = (date, title, sub, items, cls = '') => {
+  const laneHtml = (key, title, sub, items, cls = '') => {
     const budget = items.reduce((t, it) => t + it.gifts.reduce((s, g) => s + (g.my_share ?? g.price ?? 0), 0), 0);
     const n = items.reduce((t, it) => t + it.gifts.length, 0);
-    return `<section class="lane ${cls}" data-lane-date="${date}"><div class="lane-head"><div><b>${title}</b><div class="muted small">${sub}</div></div>
+    return `<section class="lane ${cls}" data-lane-key="${esc(key)}"><div class="lane-head"><div><b>${title}</b><div class="muted small">${sub}</div></div>
       <div class="muted small" style="text-align:right">${n} cadeau${n > 1 ? 'x' : ''}${budget ? `<br>${eur(budget)}` : ''}</div></div>
       <div class="lane-body">${items.map((it) => { const c = it.e.contact;
-        return `<div class="lane-card"><a href="#/contact/${c.id}" class="lane-who">${avatar(c, 'sm')}<span><b>${esc(fullName(c))}</b>${it.x?.label ? `<div class="muted small">${esc(it.x.label)}</div>` : ''}</span></a>
+        return `<div class="lane-card"><a href="#/contact/${c.id}" class="lane-who">${avatar(c, 'sm')}<span><b>${esc(fullName(c))}</b></span></a>
           <div class="gifts">${it.gifts.map((g) => giftChip(g, { drag: true })).join('') || '<span class="muted small">Aucun cadeau prévu</span>'}</div>
           <div><button class="small ghost" data-act="new-gift" data-contact="${c.id}" data-occasion="christmas" data-year="${year}" ${it.x ? `data-christmas="${it.x.id}"` : ''}>＋ Cadeau</button></div></div>`; }).join('')}</div></section>`;
   };
-  const html = [...lanes.keys()].sort().map((d) => { const n = daysTo(d);
-    return laneHtml(d, `📅 ${esc(fmtDay(d))}`, n > 0 ? `J-${n}` : n === 0 ? "Aujourd'hui" : 'passé', lanes.get(d)); }).join('')
+  const html = [...lanes.keys()].sort().map((k) => { const [d, label] = k.split('|'), n = daysTo(d);
+    return laneHtml(k, `🎄 ${label ? esc(label) : 'Noël'} · ${esc(fmtDay(d))}`, n > 0 ? `J-${n}` : n === 0 ? "Aujourd'hui" : 'passé', lanes.get(k)); }).join('')
     + (loose.length ? laneHtml('', '❔ Sans date', 'À attribuer à un Noël', loose, 'lane-loose') : '');
   return html || '<div class="empty">Aucun Noël prévu. Ajoute une date depuis l\'onglet Noël.</div>';
 }
@@ -623,16 +624,16 @@ document.addEventListener('dragstart', (e) => {
   setTimeout(() => el.classList.add('dragging'), 0);
 });
 document.addEventListener('dragend', () => { dragGift = null; document.querySelectorAll('.dragging, .drop-ok').forEach((x) => x.classList.remove('dragging', 'drop-ok')); });
-document.addEventListener('dragover', (e) => { const lane = e.target.closest?.('[data-lane-date]'); if (!dragGift || !lane) return; e.preventDefault(); document.querySelectorAll('.drop-ok').forEach((x) => x !== lane && x.classList.remove('drop-ok')); lane.classList.add('drop-ok'); });
+document.addEventListener('dragover', (e) => { const lane = e.target.closest?.('[data-lane-key]'); if (!dragGift || !lane) return; e.preventDefault(); document.querySelectorAll('.drop-ok').forEach((x) => x !== lane && x.classList.remove('drop-ok')); lane.classList.add('drop-ok'); });
 document.addEventListener('drop', async (e) => {
-  const lane = e.target.closest?.('[data-lane-date]'); if (!dragGift || !lane) return;
+  const lane = e.target.closest?.('[data-lane-key]'); if (!dragGift || !lane) return;
   e.preventDefault();
-  const g = dragGift, date = lane.dataset.laneDate; dragGift = null;
+  const g = dragGift, [date, label = ''] = lane.dataset.laneKey.split('|'); dragGift = null;
   try {
     let xid = null;
     if (date) {
       const xs = await api(`/api/christmases?contact_id=${g.contact}&year=${g.year}`);
-      xid = (xs.find((x) => x.date === date) || await api('/api/christmases', 'POST', { contact_id: g.contact, year: g.year, date })).id;
+      xid = (xs.find((x) => laneKey(x) === lane.dataset.laneKey) || await api('/api/christmases', 'POST', { contact_id: g.contact, year: g.year, date, label })).id;
     }
     await api(`/api/gifts/${g.id}`, 'PUT', { christmas_id: xid });
     toast(date ? 'Cadeau déplacé ✓' : 'Cadeau détaché de sa date ✓'); refresh();
