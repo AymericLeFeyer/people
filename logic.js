@@ -69,7 +69,9 @@ export function decorate(c, th = thresholds(), t = today()) {
 export function giftInfo(contactId, occasion, year) {
   const given = all(`SELECT * FROM gifts WHERE contact_id=? AND direction='given' AND occasion=? ORDER BY year DESC, id DESC`, contactId, occasion);
   const received = all(`SELECT * FROM gifts WHERE contact_id=? AND direction='received' ORDER BY year DESC, id DESC LIMIT 3`, contactId);
+  const christmases = occasion === 'christmas' ? all('SELECT * FROM christmases WHERE contact_id=? AND year=? ORDER BY date, id', contactId, year) : [];
   return {
+    christmases,
     current: given.filter((g) => g.year === year),
     last_given: given.find((g) => g.year < year && g.status === 'given') || null,
     received,
@@ -81,12 +83,13 @@ export function birthdayGifts(days) {
   return contactRows()
     .filter((c) => c.next_birthday && c.next_birthday.days <= days)
     .sort((a, b) => a.next_birthday.days - b.next_birthday.days)
-    .map((c) => ({ contact: c, ...(c.gift_birthday ? giftInfo(c.id, 'birthday', c.next_birthday.year) : { current: [], last_given: null, received: [] }) }));
+    .map((c) => ({ contact: c, ...(c.gift_birthday ? giftInfo(c.id, 'birthday', c.next_birthday.year) : { christmases: [], current: [], last_given: null, received: [] }) }));
 }
 
 const catOrder = Object.fromEntries(CATEGORIES.map((c, i) => [c.key, i]));
 export function christmasGifts(year) {
   const withGift = new Set(all(`SELECT DISTINCT contact_id FROM gifts WHERE occasion='christmas' AND direction='given' AND year=?`, year).map((r) => r.contact_id));
+  for (const r of all('SELECT DISTINCT contact_id FROM christmases WHERE year=?', year)) withGift.add(r.contact_id);
   return contactRows()
     .filter((c) => c.gift_christmas || withGift.has(c.id))
     .sort((a, b) => (catOrder[a.category] ?? 9) - (catOrder[b.category] ?? 9) || a.name.localeCompare(b.name))

@@ -180,9 +180,11 @@ function giftFields(b, partial = false) {
   set('year', (v) => int(v) || new Date().getFullYear());
   set('status', (v) => (v === 'bought' ? 'ordered' : ['idea', 'ordered', 'received', 'wrapped', 'given'].includes(v) ? v : 'given'));
   set('description', (v) => str(v)); set('price', num); set('my_share', num);
+  set('christmas_id', (v) => int(v) || null);
   set('is_group', bool); set('co_givers', str); set('note', str);
   if ('description' in out && !out.description) throw bad('Décris le cadeau');
   if (out.direction === 'received') out.status = 'given';
+  if (out.direction === 'received' || (out.occasion && out.occasion !== 'christmas')) out.christmas_id = null;
   if (out.is_group === 0) { out.co_givers = null; out.my_share = null; }
   return out;
 }
@@ -207,6 +209,38 @@ route('PUT', '/api/gifts/:id', ({ params, body }) => {
 });
 
 route('DELETE', '/api/gifts/:id', ({ params }) => { run('DELETE FROM gifts WHERE id=?', params.id); return { ok: true }; });
+
+// ---------- API : Noëls (une personne peut avoir plusieurs dates la même année) ----------
+function christmasFields(b, partial = false) {
+  const out = {};
+  const set = (k, v) => { if (!partial || k in b) out[k] = v(b[k]); };
+  set('contact_id', int); set('year', (v) => int(v) || new Date().getFullYear());
+  set('date', (v) => { const s = str(v); if (!/^\d{4}-\d{2}-\d{2}$/.test(s || '')) throw bad('Date invalide'); return s; });
+  set('label', str);
+  if (partial && !('contact_id' in b)) delete out.contact_id;
+  return out;
+}
+route('GET', '/api/christmases', ({ query }) => {
+  const w = [], p = [];
+  for (const k of ['contact_id', 'year']) if (query.get(k)) { w.push(`${k}=?`); p.push(query.get(k)); }
+  return all(`SELECT * FROM christmases ${w.length ? 'WHERE ' + w.join(' AND ') : ''} ORDER BY date, id`, ...p);
+});
+route('POST', '/api/christmases', ({ body }) => {
+  const f = christmasFields(body);
+  if (!f.contact_id || !get('SELECT 1 AS x FROM contacts WHERE id=?', f.contact_id)) throw bad('Contact inconnu');
+  return get('SELECT * FROM christmases WHERE id=?', insert('christmases', f));
+});
+route('PUT', '/api/christmases/:id', ({ params, body }) => {
+  if (!get('SELECT 1 AS x FROM christmases WHERE id=?', params.id)) throw notFound();
+  const f = christmasFields(body, true); delete f.contact_id;
+  update('christmases', params.id, f);
+  return get('SELECT * FROM christmases WHERE id=?', params.id);
+});
+route('DELETE', '/api/christmases/:id', ({ params }) => {
+  run('UPDATE gifts SET christmas_id=NULL WHERE christmas_id=?', params.id);
+  run('DELETE FROM christmases WHERE id=?', params.id);
+  return { ok: true };
+});
 
 route('GET', '/api/gifts/overview', ({ query }) => {
   const year = int(query.get('year')) || new Date().getFullYear();
@@ -255,15 +289,15 @@ route('GET', '/api/export', () => {
   for (const c of contacts) {
     if (c.photo && photoExists(c.photo)) photos[path.basename(c.photo)] = fs.readFileSync(path.join(PHOTO_DIR, path.basename(c.photo))).toString('base64');
   }
-  return { version: 2, exported_at: new Date().toISOString(), contacts, visits: all('SELECT * FROM visits'), gifts: all('SELECT * FROM gifts'), photos, thresholds: getSetting('thresholds', {}) };
+  return { version: 2, exported_at: new Date().toISOString(), contacts, visits: all('SELECT * FROM visits'), gifts: all('SELECT * FROM gifts'), christmases: all('SELECT * FROM christmases'), photos, thresholds: getSetting('thresholds', {}) };
 });
 
 route('POST', '/api/import', ({ body }) => {
   if (!Array.isArray(body.contacts)) throw bad('Fichier invalide');
   const photos = body.photos || {};
   tx(() => {
-    run('DELETE FROM gifts'); run('DELETE FROM visits'); run('DELETE FROM contacts');
-    for (const [table, rows] of [['contacts', body.contacts], ['visits', body.visits || []], ['gifts', body.gifts || []]]) {
+    run('DELETE FROM christmases'); run('DELETE FROM gifts'); run('DELETE FROM visits'); run('DELETE FROM contacts');
+    for (const [table, rows] of [['contacts', body.contacts], ['visits', body.visits || []], ['christmases', body.christmases || []], ['gifts', body.gifts || []]]) {
       for (const r of rows) {
         const o = { ...r };
         if (table === 'contacts') {

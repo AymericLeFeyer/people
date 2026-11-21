@@ -79,6 +79,20 @@ if (!db.prepare('PRAGMA table_info(visits)').all().some((c) => c.name === 'kind'
   db.exec("ALTER TABLE visits ADD COLUMN kind TEXT NOT NULL DEFAULT 'visit'");
 }
 
+db.exec(`CREATE TABLE IF NOT EXISTS christmases (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  contact_id INTEGER NOT NULL REFERENCES contacts(id) ON DELETE CASCADE,
+  year INTEGER NOT NULL,
+  date TEXT NOT NULL,
+  label TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS christmases_contact ON christmases(contact_id, year);`);
+if (!db.prepare('PRAGMA table_info(gifts)').all().some((c) => c.name === 'christmas_id')) {
+  // quel Noël (quelle date) d'une personne ce cadeau concerne ; NULL = pas encore attribué
+  db.exec('ALTER TABLE gifts ADD COLUMN christmas_id INTEGER');
+}
+
 db.exec("UPDATE gifts SET status='ordered' WHERE status='bought'");
 
 /** node:sqlite refuse `undefined` et les booléens : on normalise. */

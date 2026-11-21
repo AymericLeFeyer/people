@@ -257,3 +257,16 @@ code { background: var(--accent-soft); padding: 1px 6px; border-radius: 6px; fon
 .xmas.collapsed .xmas-list, .xmas.collapsed .legend { display: none; }
 .xmas.collapsed .card-head { margin-bottom: 0; }
 .gift.s-idea .st { color: var(--st-idea); } .gift.s-ordered .st { color: var(--st-ordered); } .gift.s-received .st { color: var(--st-received); } .gift.s-wrapped .st { color: var(--st-wrapped); } .gift.s-given .st { color: var(--st-given); }
+
+/* dates de Noël + swimlanes */
+.tag.xdate { cursor: pointer; background: var(--xmas-soft); color: var(--xmas); border-color: color-mix(in srgb, var(--xmas) 30%, var(--line)); }
+.gift .xd { font-size: 11.5px; color: var(--xmas); font-weight: 600; }
+button.ghost { background: transparent; }
+.lane { border: 1px solid var(--line); border-left: 5px solid var(--xmas); border-radius: var(--radius); background: var(--card); margin-bottom: 14px; overflow: hidden; }
+.lane-loose { border-left-color: var(--warn); }
+.lane-head { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 12px 14px; background: var(--xmas-soft); }
+.lane-loose .lane-head { background: var(--warn-soft); }
+.lane-body { display: flex; gap: 10px; padding: 12px; overflow-x: auto; align-items: stretch; }
+.lane-card { flex: 0 0 260px; border: 1px solid var(--line); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; background: var(--bg); }
+.lane-who { display: flex; gap: 8px; align-items: center; color: inherit; text-decoration: none; }
+@media (max-width: 700px) { .lane-body { flex-direction: column; } .lane-card { flex: none; } }

@@ -20,6 +20,9 @@ function toast(msg, err = false) {
   clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), err ? 5000 : 2200);
 }
 const fmtDate = (s) => { if (!s) return ''; const [y, m, d] = s.split('-').map(Number); return `${d} ${MONTHS[m - 1]} ${y}`; };
+const fmtDay = (s) => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'long' }); };
+const daysTo = (s) => { const [y, m, d] = s.split('-').map(Number), [ty, tm, td] = todayStr().split('-').map(Number); return Math.round((new Date(y, m - 1, d) - new Date(ty, tm - 1, td)) / 864e5); };
+const xmasName = (x) => `${fmtDay(x.date)}${x.label ? ' · ' + x.label : ''}`;
 const fmtDM = (m, d) => `${d} ${MONTHS[m - 1]}`;
 const ago = (n) => n === null || n === undefined ? 'Jamais vu' : n === 0 ? "Aujourd'hui" : n === 1 ? 'Hier' : n < 60 ? `il y a ${n} j` : n < 700 ? `il y a ${Math.round(n / 30.4)} mois` : `il y a ${(n / 365).toFixed(1).replace('.', ',')} ans`;
 const inDays = (n) => (n === 0 ? "aujourd'hui" : n === 1 ? 'demain' : `dans ${n} j`);
@@ -63,12 +66,13 @@ function closeModal() { if (dlg.open) dlg.close(); }
 dlg.addEventListener('click', (e) => { if (e.target === dlg) closeModal(); });
 
 // ====================== cadeaux : composants ======================
-function giftChip(g, { edit = true } = {}) {
+function giftChip(g, { edit = true, dates } = {}) {
   const [label, icon] = STATUS[g.status] || STATUS.given;
   const money = g.is_group && g.my_share != null ? `${eur(g.my_share)} / ${eur(g.price)}` : eur(g.price);
   return `<span class="gift s-${g.status}">
     ${g.direction === 'given' ? `<span class="st" data-act="cycle-gift" data-id="${g.id}" data-status="${g.status}" title="Changer le statut">${icon} ${label}</span>` : '🎁'}
     <span>${esc(g.description)}</span>
+    ${dates && g.christmas_id && dates[g.christmas_id] ? `<span class="xd" title="${esc(xmasName(dates[g.christmas_id]))}">📅 ${new Date(dates[g.christmas_id].date + 'T00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</span>` : ''}
     ${g.is_group ? `<span title="Cadeau groupé">👥${g.co_givers ? ' ' + esc(g.co_givers) : ''}</span>` : ''}
     ${money ? `<span class="muted">${money}</span>` : ''}
     ${edit ? `<button class="icon" data-act="edit-gift" data-id="${g.id}" title="Modifier">✎</button>` : ''}
@@ -82,9 +86,14 @@ function giftContext(e, occasion, year) {
   if (e.contact.interests) bits.push(`💭 ${esc(e.contact.interests)}`);
   return bits.length ? `<div class="ctx">${bits.join(' · ')}</div>` : '';
 }
+function xmasDates(e, year) {
+  const xs = (e.christmases || []).map((x) => `<span class="tag xdate" data-act="edit-xmas" data-id="${x.id}" title="Modifier cette date">📅 ${esc(xmasName(x))}</span>`).join('');
+  return `<div class="gifts">${xs}<button class="small ghost" data-act="new-xmas" data-contact="${e.contact.id}" data-year="${year}">＋ Date de Noël</button></div>`;
+}
 function giftBlock(e, occasion, year) {
-  const chips = e.current.map((g) => giftChip(g)).join('');
-  return `<div class="gifts">${chips}<button class="small" data-act="new-gift" data-contact="${e.contact.id}" data-occasion="${occasion}" data-year="${year}">＋ ${e.current.length ? 'Autre' : 'Idée / cadeau'}</button></div>${giftContext(e, occasion, year)}`;
+  const dates = Object.fromEntries((e.christmases || []).map((x) => [x.id, x]));
+  const chips = e.current.map((g) => giftChip(g, { dates })).join('');
+  return `${occasion === 'christmas' ? xmasDates(e, year) : ''}<div class="gifts">${chips}<button class="small" data-act="new-gift" data-contact="${e.contact.id}" data-occasion="${occasion}" data-year="${year}">＋ ${e.current.length ? 'Autre' : 'Idée / cadeau'}</button></div>${giftContext(e, occasion, year)}`;
 }
 
 function birthdayRow(e) {
@@ -293,17 +302,46 @@ function giftTable(list, contactId) {
     <td style="width:40px"><button class="icon" data-act="edit-gift" data-id="${g.id}">✎</button></td></tr>`).join('')}</tbody></table>`;
 }
 
+function swimlanes(list, year) {
+  const lanes = new Map(); // date -> [{e, xmas, gifts}]
+  const loose = [];        // cadeaux / personnes sans date
+  const add = (key, item) => { if (!lanes.has(key)) lanes.set(key, []); lanes.get(key).push(item); };
+  for (const e of list) {
+    const xs = e.christmases || [];
+    for (const x of xs) add(x.date, { e, x, gifts: e.current.filter((g) => g.christmas_id === x.id) });
+    const free = e.current.filter((g) => !xs.some((x) => x.id === g.christmas_id));
+    if (free.length || !xs.length) loose.push({ e, gifts: free });
+  }
+  const laneHtml = (title, sub, items, cls = '') => {
+    const budget = items.reduce((t, it) => t + it.gifts.reduce((s, g) => s + (g.my_share ?? g.price ?? 0), 0), 0);
+    const n = items.reduce((t, it) => t + it.gifts.length, 0);
+    return `<section class="lane ${cls}"><div class="lane-head"><div><b>${title}</b><div class="muted small">${sub}</div></div>
+      <div class="muted small" style="text-align:right">${n} cadeau${n > 1 ? 'x' : ''}${budget ? `<br>${eur(budget)}` : ''}</div></div>
+      <div class="lane-body">${items.map((it) => { const c = it.e.contact;
+        return `<div class="lane-card"><a href="#/contact/${c.id}" class="lane-who">${avatar(c, 'sm')}<span><b>${esc(fullName(c))}</b>${it.x?.label ? `<div class="muted small">${esc(it.x.label)}</div>` : ''}</span></a>
+          <div class="gifts">${it.gifts.map((g) => giftChip(g)).join('') || '<span class="muted small">Aucun cadeau prévu</span>'}</div>
+          <div><button class="small ghost" data-act="new-gift" data-contact="${c.id}" data-occasion="christmas" data-year="${year}" ${it.x ? `data-christmas="${it.x.id}"` : ''}>＋ Cadeau</button></div></div>`; }).join('')}</div></section>`;
+  };
+  const html = [...lanes.keys()].sort().map((d) => { const n = daysTo(d);
+    return laneHtml(`📅 ${esc(fmtDay(d))}`, n > 0 ? `J-${n}` : n === 0 ? "Aujourd'hui" : 'passé', lanes.get(d)); }).join('')
+    + (loose.length ? laneHtml('❔ Sans date', 'À attribuer à un Noël', loose, 'lane-loose') : '');
+  return html || '<div class="empty">Aucun Noël prévu. Ajoute une date depuis l\'onglet Noël.</div>';
+}
+
 // ---------- cadeaux ----------
 pages.gifts = async (main) => {
   const tab = state.tab.gifts || 'xmas';
   const year = state.tab.giftYear || new Date().getFullYear();
   const o = await api(`/api/gifts/overview?year=${year}`);
-  const tabs = [['xmas', '🎄 Noël'], ['bday', '🎂 Anniversaires'], ['history', '📜 Historique']];
+  const tabs = [['xmas', '🎄 Noël'], ['plan', '📅 Planning'], ['bday', '🎂 Anniversaires'], ['history', '📜 Historique']];
   let body = '';
   if (tab === 'xmas') {
     body = `<div class="row" style="margin-bottom:14px"><label style="margin:0">Année</label>
       <select data-change="gift-year" style="width:auto">${[year + 1, year, year - 1, year - 2, year - 3].filter((v, i, a) => a.indexOf(v) === i).map((y) => `<option ${y === year ? 'selected' : ''}>${y}</option>`).join('')}</select></div>`
       + christmasCard({ year: o.year, list: o.christmas, summary: o.christmas_summary }, { full: true });
+  } else if (tab === 'plan') {
+    body = `<div class="row" style="margin-bottom:14px"><label style="margin:0">Année</label>
+      <select data-change="gift-year" style="width:auto">${[year + 1, year, year - 1, year - 2, year - 3].filter((v, i, a) => a.indexOf(v) === i).map((y) => `<option ${y === year ? 'selected' : ''}>${y}</option>`).join('')}</select></div>` + swimlanes(o.christmas, year);
   } else if (tab === 'bday') {
     body = `<section class="card"><div class="card-head"><h2>Anniversaires des 90 prochains jours</h2></div><div class="list">${o.birthdays.map(birthdayRow).join('') || '<div class="empty">Aucun.</div>'}</div></section>`;
   } else {
@@ -392,9 +430,9 @@ async function visitModal({ ids = [], visit, kind = 'visit' } = {}) {
       <button class="primary">Enregistrer</button></form>`);
 }
 
-async function giftModal({ gift, contact, occasion, year } = {}) {
+async function giftModal({ gift, contact, occasion, year, christmas } = {}) {
   const contacts = (await loadContacts()).filter((c) => !c.hidden || c.id === +(gift?.contact_id || contact));
-  const g = gift || { direction: 'given', occasion: occasion || 'other', year: year || new Date().getFullYear(), status: occasion ? 'idea' : 'given', contact_id: contact };
+  const g = gift || { direction: 'given', occasion: occasion || 'other', year: year || new Date().getFullYear(), status: occasion ? 'idea' : 'given', contact_id: contact, christmas_id: christmas };
   const opt = (v, l, sel) => `<option value="${v}" ${sel ? 'selected' : ''}>${l}</option>`;
   openModal(gift ? 'Modifier le cadeau' : 'Nouveau cadeau', `
     <form data-form="gift" data-id="${gift?.id || ''}" id="gift-form">
@@ -404,6 +442,8 @@ async function giftModal({ gift, contact, occasion, year } = {}) {
       <div class="cols"><div class="field"><label>Occasion</label><select name="occasion">${Object.entries(OCC).map(([k, v]) => opt(k, v, g.occasion === k)).join('')}</select></div>
         <div class="field"><label>Année</label><input type="number" name="year" value="${g.year}" required></div>
         <div class="field" data-only="given"><label>Statut</label><select name="status">${Object.entries(STATUS).map(([k, v]) => opt(k, `${v[1]} ${v[0]}`, g.status === k)).join('')}</select></div></div>
+      <div class="field hide" id="xmas-field"><label>Pour quel Noël ?</label><select name="christmas_id"></select>
+        <input type="date" name="new_date" class="hide" style="margin-top:6px"></div>
       <div class="field"><label>Cadeau</label><input name="description" value="${esc(g.description || '')}" placeholder="Ex. Moulin à café manuel" required></div>
       <div class="field"><label>Prix total (€)</label><input type="number" step="0.01" name="price" value="${g.price ?? ''}"></div>
       <div class="field" data-only="given"><label class="check"><input type="checkbox" name="is_group" ${g.is_group ? 'checked' : ''}> 👥 Cadeau groupé (plusieurs personnes se sont cotisées)</label></div>
@@ -411,11 +451,33 @@ async function giftModal({ gift, contact, occasion, year } = {}) {
         <div class="field"><label>Ma part (€)</label><input type="number" step="0.01" name="my_share" value="${g.my_share ?? ''}"></div></div>
       <div class="field"><label>Note</label><input name="note" value="${esc(g.note || '')}" placeholder="Taille, couleur, où l'acheter, réaction…"></div>
       <div class="row"><button class="primary">Enregistrer</button>${gift ? `<button type="button" class="danger" data-act="del-gift" data-id="${gift.id}">Supprimer</button>` : ''}</div></form>`);
+  syncGiftForm(); loadXmasOptions(g.christmas_id);
+}
+async function loadXmasOptions(selected) {
+  const f = $('#gift-form'); if (!f) return;
+  const cid = f.contact_id.value, year = f.year.value;
+  const xs = cid && year ? await api(`/api/christmases?contact_id=${cid}&year=${year}`) : [];
+  const sel = f.christmas_id;
+  const cur = selected !== undefined ? +selected || '' : sel.value;
+  sel.innerHTML = `<option value="">— Pas encore de date —</option>${xs.map((x) => `<option value="${x.id}">${esc(xmasName(x))}</option>`).join('')}<option value="__new">＋ Nouvelle date…</option>`;
+  sel.value = cur && xs.some((x) => x.id === +cur) ? String(cur) : (!cur && xs.length === 1 && !f.dataset.id ? String(xs[0].id) : '');
   syncGiftForm();
+}
+function xmasModal(x) {
+  openModal(x.id ? 'Modifier la date de Noël' : 'Nouvelle date de Noël', `
+    <form data-form="xmas" data-id="${x.id || ''}">
+      <input type="hidden" name="contact_id" value="${x.contact_id}"><input type="hidden" name="year" value="${x.year}">
+      <div class="field"><label>Date</label><input type="date" name="date" value="${x.date || `${x.year}-12-25`}" required></div>
+      <div class="field"><label>Précision (facultatif)</label><input name="label" value="${esc(x.label || '')}" placeholder="Ex. Chez les parents, réveillon…"></div>
+      <div class="hint">Une personne peut avoir plusieurs Noëls : ajoute une date par occasion, puis choisis la date de chaque cadeau.</div>
+      <div class="row"><button class="primary">Enregistrer</button>${x.id ? `<button type="button" class="danger" data-act="del-xmas" data-id="${x.id}">Supprimer</button>` : ''}</div></form>`);
 }
 function syncGiftForm() {
   const f = $('#gift-form'); if (!f) return;
   const dir = f.direction.value;
+  $('#xmas-field').classList.toggle('hide', !(dir === 'given' && f.occasion.value === 'christmas'));
+  f.new_date.classList.toggle('hide', f.christmas_id.value !== '__new');
+  if (f.christmas_id.value === '__new' && !f.new_date.value) f.new_date.value = `${f.year.value}-12-25`;
   f.querySelectorAll('[data-only=given]').forEach((el) => el.classList.toggle('hide', dir !== 'given'));
   $('#group-fields').classList.toggle('hide', !(dir === 'given' && f.is_group.checked));
 }
@@ -459,8 +521,11 @@ const actions = {
       state.contacts = null; toast('Photo mise à jour'); refresh();
     }; input.click();
   },
-  'new-gift': (el) => giftModal({ contact: el.dataset.contact ? +el.dataset.contact : undefined, occasion: el.dataset.occasion, year: el.dataset.year ? +el.dataset.year : undefined }),
+  'new-gift': (el) => giftModal({ christmas: el.dataset.christmas ? +el.dataset.christmas : undefined, contact: el.dataset.contact ? +el.dataset.contact : undefined, occasion: el.dataset.occasion, year: el.dataset.year ? +el.dataset.year : undefined }),
   'edit-gift': async (el) => { const g = (await api('/api/gifts')).find((x) => x.id === +el.dataset.id); giftModal({ gift: g }); },
+  'new-xmas': (el) => xmasModal({ contact_id: +el.dataset.contact, year: +el.dataset.year }),
+  'edit-xmas': async (el) => xmasModal((await api('/api/christmases')).find((x) => x.id === +el.dataset.id)),
+  'del-xmas': async (el) => { if (!confirm('Supprimer cette date ? Les cadeaux associés sont conservés (sans date).')) return; await api(`/api/christmases/${el.dataset.id}`, 'DELETE'); closeModal(); refresh(); },
   'del-gift': async (el) => { if (!confirm('Supprimer ce cadeau ?')) return; await api(`/api/gifts/${el.dataset.id}`, 'DELETE'); closeModal(); refresh(); },
   'cycle-gift': async (el) => { await api(`/api/gifts/${el.dataset.id}`, 'PUT', { status: NEXT_STATUS[el.dataset.status] }); refresh(); },
   tab: (el) => { state.tab.gifts = el.dataset.tab; refresh(); },
@@ -492,8 +557,18 @@ const forms = {
   },
   async gift(fd, el) {
     const b = Object.fromEntries(fd.entries()); b.is_group = fd.has('is_group');
+    if (b.christmas_id === '__new') {
+      if (!b.new_date) throw new Error('Choisis la date du Noël');
+      b.christmas_id = (await api('/api/christmases', 'POST', { contact_id: b.contact_id, year: b.year, date: b.new_date })).id;
+    }
+    delete b.new_date;
     el.dataset.id ? await api(`/api/gifts/${el.dataset.id}`, 'PUT', b) : await api('/api/gifts', 'POST', b);
     closeModal(); toast('Cadeau enregistré ✓'); refresh();
+  },
+  async xmas(fd, el) {
+    const b = { contact_id: fd.get('contact_id'), year: fd.get('year'), date: fd.get('date'), label: fd.get('label') };
+    el.dataset.id ? await api(`/api/christmases/${el.dataset.id}`, 'PUT', b) : await api('/api/christmases', 'POST', b);
+    closeModal(); toast('Date enregistrée ✓'); refresh();
   },
   async thresholds(fd) {
     await api('/api/settings/thresholds', 'PUT', Object.fromEntries([...fd.entries()]));
@@ -531,7 +606,7 @@ document.addEventListener('submit', async (e) => {
 document.addEventListener('change', async (e) => {
   const el = e.target.closest('[data-change]');
   if (el && changes[el.dataset.change]) { try { await changes[el.dataset.change](el); } catch (err) { toast(err.message, true); } }
-  if (e.target.closest('#gift-form')) syncGiftForm();
+  if (e.target.closest('#gift-form')) { if (['contact_id', 'year'].includes(e.target.name)) loadXmasOptions(); else syncGiftForm(); }
 });
 document.addEventListener('input', (e) => { if (e.target.dataset?.change === 'picker-filter') changes['picker-filter'](e.target); });
 
